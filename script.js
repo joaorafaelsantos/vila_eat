@@ -667,8 +667,8 @@ $(function () {
                         }
                     }
                 }
-                console.log(location.hostname)
                 function createMarker(place) {
+                    console.log("entrei")
                     var placeLoc = place.geometry.location;
                     var marker = new google.maps.Marker({
                         map: map,
