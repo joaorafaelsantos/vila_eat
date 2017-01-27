@@ -673,7 +673,7 @@ $(function () {
                     var marker = new google.maps.Marker({
                         map: map,
                         position: place.geometry.location,
-                        icon: 'images/favicon2.ico' //ICON DO GARFO NO MAPA
+                        icon: "entrei"+'images/favicon2.ico' //ICON DO GARFO NO MAPA
                     });
                     //INFORMAÇÃO DA INFOWINDOW (NOME DO RESTAURANTE, MORADA E RATING)
                     google.maps.event.addListener(marker, 'click', function () {
