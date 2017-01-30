@@ -520,7 +520,7 @@ $(function () {
                 $("#container").before("<button id='btn_terminar_sessao' class='btn btn-xs btn-link center-block'>Terminar sessão</button></br>");
                 $("#btn_terminar_sessao").css({
                     "outline": "none",
-                    "text-decoration": "none"
+                    "color": "black"
                 });
                 $("#btn_terminar_sessao").click(function () {
                     terminarSessao();
