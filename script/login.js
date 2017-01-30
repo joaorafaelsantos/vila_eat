@@ -1,6 +1,6 @@
-/* ---------------------- */
+/* --------------------- */
 /* 1 - FIREBASE SNIPPET  */
-/* ---------------------- */
+/* --------------------- */
 
 var config = {
     apiKey: "AIzaSyBcaJGStUhssuTL4q6t-c7489ZKcUmLeWk",
@@ -11,9 +11,9 @@ var config = {
 };
 firebase.initializeApp(config);
 
-/* ----------- */
+/* ---------- */
 /* 2 - LOGIN  */
-/* ----------- */
+/* ---------- */
 
 $(function () {
     //VERIFICA SE O UTILIZADOR ESTÁ LOGADO
@@ -99,18 +99,6 @@ $(function () {
                     }
                     //FIREBASE - DADOS DE INICIAR SESSÃO CORRETOS
                     firebase.auth().signInWithEmailAndPassword(email, password).then(function () {
-                        swal({ //sweetalert
-                            title: 'Bem-vindo!',
-                            text: 'Sessão iniciada com sucesso',
-                            type: 'success',
-                            timer: 1500
-                        }).then(function () { //AO CARREGAR NO OK
-                            location.href = "main.HTML";
-                        }, function (dismiss) {
-                            if (dismiss === 'timer') { //APÓS CONCLUIR O TIMER REDIRECIONA PARA A PÁGINA PRINCIPAL
-                                location.href = "main.HTML";
-                            }
-                        })
                     }, function (error) {
                         //DADOS DE INICIAR SESSÃO INCORRETOS
                         if (isPreenchido == true) { //SE O FORM ESTÁ BEM PREENCHIDO

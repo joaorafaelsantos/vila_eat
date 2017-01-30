@@ -1,11 +1,11 @@
-/* altera cor de fundo da navbar */
+/*ALTERA A COR DE FUNDO DA NAVBAR*/
 
 .navbar {
   background-color: #E5E5E5;
 }
 
 
-/* centrar navbar em smartphone*/
+/*CENTRA A NABVAR NO SMARTPHONE*/
 
 @media only screen and (max-width: 768px) {
   .navbar .navbar-brand {
@@ -22,7 +22,7 @@
 }
 
 
-/* centrar a brand da navbar */
+/*CENTRA A BRAND DA NAVBAR*/
 
 .navbar .navbar-brand {
   background: url(../images/brand_logo.png) center / contain no-repeat;
@@ -33,9 +33,7 @@
 }
 
 
-/****
-LOGIN
-****/
+/*FORM'S LOGIN*/
 
 #div_auth {
   width: 100%;
@@ -54,24 +52,7 @@ LOGIN
   box-shadow: 0 0 20px 0 rgba(0, 0, 0, 0.2), 0 5px 5px 0 rgba(0, 0, 0, 0.24);
 }
 
-
-/*centrar logo redondo na página*/
-
-.img-center {
-  margin: 0 auto;
-}
-
-#logo {
-  position: absolute;
-  margin: auto;
-  top: 0;
-  left: 0;
-  right: 0;
-  bottom: 0;
-}
-
-
-/* footer responsivo */
+/*FOOTER RESPONSIVO*/
 
 footer {
   position: fixed;
@@ -84,8 +65,7 @@ footer {
   justify-content: center;
 }
 
-
-/* acertar social networks icons (tamanho, espaçamento, etc) */
+/*ACERTA ICONS DAS REDES SOCIAIS (TAMANHO, ESPAÇAMENTO, ETC)*/
 
 #redes_sociais {
   height: 50px;
@@ -100,7 +80,7 @@ footer {
 }
 
 
-/* alterar cor da brand/simbolos ao passar o rato*/
+/*ALTERA COR DA BRAND/SÍMBOLOS AO PASSAR O RATO POR CIMA*/
 
 .navbar-brand img:hover,
 .facebook img:hover,
@@ -110,15 +90,13 @@ footer {
   filter: grayscale(50%);
 }
 
+/*MAPA GOOGLE*/
 #map {
   margin-left: auto;
   margin-right: auto;
 }
 
-.btn-info {
-  background-color: #46bcec;
-}
-
+/*OPÇÕES CENTRAR - CLASSE*/
 .vertical-center {
   min-height: 100%;
   /* Fallback for browsers do NOT support vh unit */
@@ -128,8 +106,10 @@ footer {
   align-items: center;
 }
 
-
-/* override bootstrap - label default a azul bb e label info a azul escuro*/
+/*OVERRIDE BOOTSTRAP*/
+.btn-info {
+  background-color: #46bcec;
+}
 
 .label-default {
   background-color: #46BCEC;
@@ -137,4 +117,24 @@ footer {
 
 .label-info {
   background-color: #00637C;
+}
+
+/*CENTRAR MODAL*/
+.modal {
+  text-align: center;
+}
+
+@media screen and (min-width: 768px) { 
+  .modal:before {
+    display: inline-block;
+    vertical-align: middle;
+    content: " ";
+    height: 100%;
+  }
+}
+
+.modal-dialog {
+  display: inline-block;
+  text-align: left;
+  vertical-align: middle;
 }
