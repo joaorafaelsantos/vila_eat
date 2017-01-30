@@ -1,6 +1,6 @@
-/* ---------------------- */
+/* --------------------- */
 /* 1 - FIREBASE SNIPPET  */
-/* ---------------------- */
+/* --------------------- */
 
 var config = {
     apiKey: "AIzaSyBcaJGStUhssuTL4q6t-c7489ZKcUmLeWk",
@@ -28,18 +28,26 @@ $(function () {
     firebase.auth().onAuthStateChanged(function (user) {
         //SE O UTILIZADOR ESTIVER LOGADO ABRE A PÁGINA PRINCIPAL
         if (user) {
+            //FUNÇÃO TERMINAR SESSÃO DA FIREBASE
+            function terminarSessao() {
+                firebase.auth().signOut().then(function () {}, function (error) {
+                    console.log(error);
+                });
+            }
             //VARIÁVEIS GLOBAIS DEFAULT
             var map; //MAPA DA GOOGLE
+            var directionsDisplay; //API DIRECTIONS
+            var directionsService; //API DIRECTIONS
             var pos; //OBJETO COM LATITUDES E LONGITUDES
             var isLoad = false; //FLAG PARA VERIFICAR SE O LOAD FOI FEITO
-            var zoom; //ZOOM DO MAPA DA GOOGLWE
+            var zoom; //ZOOM DO MAPA DA GOOGLE
             var restaurantes = []; //CONTÉM DADOS DE TODOS OS RESTAURANTES
             var restaurantesPontuacao; //CONTÉM DADOS DE TODOS OS RESTAURANTES (EXCEPTO OS QUE NÃO TÊM PONTUAÇÃO)
             var tempRestaurantes = []; //CONTÉM DADOS DE TODOS OS RESTAURANTES FILTRADOS
             var isIPAD; //FLAG DE VERIFICAÇÃO SE O DISPOSITIVO É IPAD (AJUSTAR RESPONSIVIDADE)
             var restaurantesFirebase; //CONTÉM DADOS DOS RESTAURANTES EXISTENTES DA DATABASE DA FIREBASE
             var tiposComida = []; //CONTÉM TODOS OS TIPOS DE COMIDA EXISTENTES
-            var isSmartphoneIPAD; //FLAG DE VERIFICAÇÃO SE O DISPOSITIVO É SMARTPHONE OU IPAD PARA ABRIR DIV MAPA AO CARREGAR NO BTN DE OBTER DIREÇÕES
+            var isSmartphoneIPAD; //FLAG DE VERIFICAÇÃO SE O DISPOSITIVO É SMARTPHONE OU IPAD PARA ABRIR DIV MAPA AO CARREGAR NO BOTÃO DE OBTER DIREÇÕES
             //GUARDA NO ARRAY OS DADOS DA FIREBASE
             var ref = firebase.database().ref();
             ref.on("value", function (snapshot) {
@@ -52,20 +60,30 @@ $(function () {
             $("body").prepend("<div id='loading' class='vertical-center' style='display: flex; justify-content: center; align-items: center;'><img id='loading' class='img-responsive center-block' src='images/loading.svg' alt='Loading'></div>");
             $("#loading").css("visibility", "visible");
             //ALIMENTA O SELECT COM OS TIPOS DE COMIDA EXISTENTES NO ARRAY
-            function addSelectTiposComida() {
+            function addSelectTiposComida(value) {
                 //tipos de comida
-                $('.selectpicker').selectpicker();
+                $(value).selectpicker();
+                $(value).append("<option value='all'>Todos os tipos de comida</option>")
                 for (i = 0; i < tiposComida.length; i++) {
                     var option = "<option>" + tiposComida[i] + "</option>"
-                    $('.selectpicker').append(option)
+                    $(value).append(option)
                 }
-                $('.selectpicker').selectpicker('refresh');
+                $(value).val("all");
+                $(value).selectpicker('refresh');
             }
             //FUNÇÃO QUE FAZ O CARREGAMENTO DA TOTAL PÁGINA
             function load() {
                 $("#loading").remove();
                 $("body").css("visibility", "visible");
+                //AO CARREGAR NO LOGO DA PÁGINA PRINCIPAL LIMPA PESQUISA, ORDENANDO POR NOME (DEFAULT)
+                $(".text-hide").click(function () {
+                    ordenarNome();
+                    $("#selectOrdenar").val($("#selectOrdenar option:first").val());
+                });
                 if (isLoad == false) {
+                    //API DIRECTIONS
+                    directionsDisplay = new google.maps.DirectionsRenderer;
+                    directionsService = new google.maps.DirectionsService;
                     //ADICIONA AO ARRAY DOS RESTAURANTES TODA A INFORMAÇÃO DO ARRAY QUE CONTINHA DADOS DA FIREBASE
                     for (var i = 0; i < restaurantes.length; i++) {
                         for (var j = 0; j < restaurantesFirebase.length; j++) {
@@ -88,7 +106,7 @@ $(function () {
                             restaurantes.splice(i, 1, tempObj)
                         }
                     }
-                    //FUNÇÃO QUE OBTÉM OS TIPOS DE COMIDA DOS RESTAURANTES TOTAL, ELIMINANDO OS REPETIDOS E ORDENANDO O ARRAY (SERVIRÁ PARA ALIMENTAR O SELECT DE TIPOS DE COMIDA)
+                    //FUNÇÃO QUE OBTÉM OS TIPOS DE COMIDA DOS RESTAURANTES TODOS, ELIMINANDO OS REPETIDOS E ORDENANDO O ARRAY (SERVIRÁ PARA ALIMENTAR O SELECT DE TIPOS DE COMIDA)
                     function obterTiposComida(array) {
                         var tempTiposComida = [];
                         for (var i = 0; i < array.length; i++) {
@@ -114,13 +132,14 @@ $(function () {
                     obterDistancia(restaurantes);
                     obterTiposComida(restaurantes);
                     ordenarNome();
-                    addSelectTiposComida();
+                    addSelectTiposComida('.selectpicker');
                     isLoad = true;
                 }
             }
             //EXECUTA A FUNÇÃO DE LOAD APÓS 5 SEGUNDOS
             setInterval(load, 5000);
 
+            //FUNÇÃO QUE LIMPA AS ROTAS DA API DIRECTIONS
             function limparRotas(valor) {
                 if (valor != null) {
                     valor.setMap(null);
@@ -129,37 +148,59 @@ $(function () {
             }
             //FUNÇÃO QUE EXECUTA OS FILTROS
             function filtrarRestaurantes() {
+                tempRestaurantes = [];
                 var valoresTipoComida = $('select').val();
                 var restaurantesAbertos = $('#checkRestaurantesAbertos').prop('checked');
                 var valorDistancia = $('#inputDistancia').val();
-                if (valoresTipoComida.length == 0) {
-                    //SWEETALERT CASO NÃO INSIRA TIPO DE COMIDA
-                    swal({
-                        title: 'Vila Eat\nWhere to Eat!',
-                        text: 'Insira um tipo de comida.',
-                        type: 'error',
-                        timer: 2000
-                    }).then(
-                        function () {},
-                        function (dismiss) {
-                            if (dismiss === 'timer') {}
-                        }
-                    )
-                } else {
-                    for (var i = 0; i < restaurantes.length; i++) {
-                        if (typeof restaurantes[i].tipo_comida != "undefined" && typeof restaurantes[i].opening_hours != "undefined") {
-                            if (restaurantes[i].tipo_comida.indexOf(valoresTipoComida) > -1 && parseFloat(restaurantes[i].distancia) <= valorDistancia && restaurantes[i].opening_hours.open_now == restaurantesAbertos) {
-                                tempRestaurantes.push(restaurantes[i]);
+                for (var i = 0; i < restaurantes.length; i++) {
+                    //TODOS OS TIPOS DE COMIDA SELECIONADOS E DISTÂNCIA
+                    if (valoresTipoComida == "all" && parseFloat(restaurantes[i].distancia) <= valorDistancia) {
+                        //RESTAURANTES ABERTOS
+                        if (restaurantesAbertos == true) {
+                            if (typeof restaurantes[i].opening_hours != "undefined") {
+                                if (restaurantes[i].opening_hours.open_now == restaurantesAbertos) {
+                                    tempRestaurantes.push(restaurantes[i]);
+                                }
                             }
+                            //TODOS OS RESTAURANTES (ABERTOS E FECHADOS)
+                        } else {
+                            tempRestaurantes.push(restaurantes[i]);
+                        }
+                        //COM TIPO DE COMIDA SELECIONADO (SE RESTAURANTE POSSUÍ ESSE TIPO DE COMIDA) E DISTÂNCIA
+                    } else if (valoresTipoComida != "all" && typeof restaurantes[i].tipo_comida != "undefined" && restaurantes[i].tipo_comida.indexOf(valoresTipoComida) > -1 && parseFloat(restaurantes[i].distancia) <= valorDistancia) {
+                        //RESTAURANTES ABERTOS
+                        if (restaurantesAbertos == true) {
+                            if (typeof restaurantes[i].opening_hours != "undefined") {
+                                if (restaurantes[i].opening_hours.open_now == restaurantesAbertos) {
+                                    tempRestaurantes.push(restaurantes[i]);
+                                }
+                            }
+                            //TODOS OS RESTAURANTES (ABERTOS E FECHADOS)
+                        } else {
+                            tempRestaurantes.push(restaurantes[i]);
                         }
                     }
-                    listarRestaurantes(tempRestaurantes);
                 }
-
+                //VERIFICA SE O ARRAY CONTÉM DADOS, SE CONTÉM LISTA OS RESULTADOS
+                if (tempRestaurantes.length > 0) {
+                    listarRestaurantes(tempRestaurantes);
+                    //CASO CONTRÁRIO EXIBE UMA MENSAGEM AO UTILIZADOR DE QUE NÃO EXISTEM RESULTADOS
+                } else {
+                    swal({ //SWEETALERT
+                        title: 'Erro!',
+                        text: 'Não existem resultados para a sua procura!',
+                        type: 'error',
+                        timer: 1500
+                    }).then(function () { //AO CARREGAR NO OK
+                    }, function (dismiss) {
+                        if (dismiss === 'timer') { //APÓS CONCLUIR O TIMER
+                        }
+                    })
+                }
             }
-
             //FUNÇÃO QUE LISTA OS RESTAURANTES COM A INFORMAÇÃO 
             function listarRestaurantes(array) {
+                //LIMPA O CONTEÚDO DA LISTA
                 if ($("#cont_lista").length != 0) {
                     $("#cont_lista").remove();
                 }
@@ -168,8 +209,8 @@ $(function () {
                 var rating = []; //CONTÉM RATING DO RESTAURANTE
                 var tipoComida = []; //CONTÉM TIPOS DE COMIDA DO RESTAURANTE
                 var arrayBtnEditar = []; //SÓ TEM O BOTÃO EDITAR PARA OS RESTAURANTES QUE NÃO TÊM TIPO DE COMIDA
-                var facebook = [];
-                var abertoFechado;
+                var facebook = []; //CONTÉM URL DO FACEBOOK DO RESTAURANTE
+                var abertoFechado; //LABEL COLORIDA DE ACORDO COM O ESTADO DE ABERTURA DO RESTAURANTE (ABERTO/FECHADO)
                 //ADICIONA AO ARRAY O URL DA FOTOGRAFIA DO RESTAURANTE
                 for (var i = 0; i < array.length; i++) {
                     if (array[i].photos) {
@@ -215,10 +256,8 @@ $(function () {
                         facebook[i] + "</p></br><button id='" + i + "' type='button' class='btn btn-md btn_obter_direcoes' style='background-color: #46BCEC; color:white;'>Obter direções</button>" + arrayBtnEditar[i] + "</br></br></div></center></br>");
                 }
                 //APÓS CARREGAR NO BOTÃO DE OBTER DIREÇÕES, CRIA NO MAPA O SENTIDO DO LOCAL DO UTILIZADOR OU NAU QUINHENTISTA AO RESTAURANTE SELECIONADO
-                var directionsDisplay = new google.maps.DirectionsRenderer;
-                var directionsService = new google.maps.DirectionsService;
                 $(".btn_obter_direcoes").click(function () {
-                    //SE FOR SMARTPHONE OU IPAD ABRE A DIV DO MAPA
+                    //SE FOR SMARTPHONE OU IPAD ABRE A DIV DO MAPA (REDIRECIONA)
                     if (isSmartphoneIPAD == true) {
                         mapa();
                     }
@@ -256,16 +295,28 @@ $(function () {
                         }
                     });
                 });
+                //AO CARREGAR NO BOTÃO EDITAR
                 $('.btn_editar').click(function () {
-                    var content = "<div class='modal fade' id='myModal' role='dialog'><div class='modal-dialog'><div class='modal-content'><div class='modal-header'><button type='button' class='close' data-dismiss='modal'>&times;</button><center><h4 class='modal-title'>Adicione tipos de comida</h4></center></div><div class='modal-body'><center><select class='selectpicker' multiple title='Selecione o tipo de comida'> </select></center></div><div class='modal-footer'><center><button id='btn_guardar' type='button' class='btn' style='background-color: #46BCEC; color:white;' data-dismiss='modal'>Gravar</button><button type='button' class='btn' style='background-color: #00637C; color:white;' data-dismiss='modal'>Fechar</button></center</div></div></div></div>"
+                    //CONTEÚDO HTML
+                    var content = "<div class='modal fade' id='myModal' role='dialog'><div class='modal-dialog'><div class='modal-content'><div class='modal-header'><button type='button' class='close' data-dismiss='modal'>&times;</button><center><h4 class='modal-title'>Adicione tipos de comida</h4></center></div><div class='modal-body'><center><select id='selectpicker_edit' class='selectpicker' multiple title='Selecione o tipo de comida'> </select></center></div><div class='modal-footer'><center><button id='btn_guardar' type='button' class='btn' style='background-color: #46BCEC; color:white;' data-dismiss='modal'>Gravar</button><button type='button' class='btn' style='background-color: #00637C; color:white;' data-dismiss='modal'>Fechar</button></center</div></div></div></div>"
                     $('#cont_lista').append(content);
-                    addSelectTiposComida();
+                    $('#selectpicker_edit').empty();
+                    addSelectTiposComida("#selectpicker_edit");
+                    $("#selectpicker_edit option:first").remove();
+                    $('#selectpicker_edit').selectpicker('refresh');
                     var temparray = array[this.id];
                     //GRAVA NA FIREBASE O TIPO DE COMIDA SELECIONADO
                     $('#btn_guardar').click(function () {
-                        var tipoComidaSelecionado = $(".selectpicker").val();
-                        if (temparray.place_id == restaurantesFirebase.placeid) {
-                            firebase.database().ref('results').child(10).child("tipo_comida").set(tipoComidaSelecionado);
+                        var id = $('.btn_editar').attr('id');
+                        var tipoComidaSelecionado = $("#selectpicker_edit").val();
+                        var id_firebase = -1;
+                        for (var i = 0; i < restaurantesFirebase.length; i++) {
+                            if (restaurantesFirebase[i].placeid == temparray.place_id) {
+                                id_firebase = i;
+                            }
+                        }
+                        if (id_firebase > -1) {
+                            firebase.database().ref('results').child(id_firebase).child("tipo_comida").set(tipoComidaSelecionado);
                         } else {
                             firebase.database().ref('results').child(restaurantesFirebase.length).set({
                                 facebook: "",
@@ -273,7 +324,6 @@ $(function () {
                                 tipo_comida: tipoComidaSelecionado
                             })
                         }
-
                     })
                 });
             }
@@ -288,6 +338,7 @@ $(function () {
                 }
                 restaurantes.sort(compare);
                 listarRestaurantes(restaurantes);
+                limparRotas(directionsDisplay);
             }
             //FUNÇÃO QUE ORDENA OS RESTAURANTES POR PONTUAÇÃO (DA MAIS ALTA PARA A MAIS BAIXA)
             function ordenarPontuacoes() {
@@ -302,11 +353,11 @@ $(function () {
                         restaurantesPontuacao.splice(i, 1);
                     }
                 }
-                //ordena os restaurantes pela pontuação mais alta
                 restaurantesPontuacao.sort(function (a, b) {
                     return parseFloat(b.rating) - parseFloat(a.rating);
                 });
                 listarRestaurantes(restaurantesPontuacao);
+                limparRotas(directionsDisplay);
             }
             //FUNÇÃO QUE ORDENA OS RESTAURANTES POR DISTÂNCIA (MAIS PERTO PARA MAIS LONGE)
             function ordenarDistancia() {
@@ -319,6 +370,7 @@ $(function () {
                 }
                 restaurantes.sort(compare);
                 listarRestaurantes(restaurantes);
+                limparRotas(directionsDisplay);
             }
 
             /* ----------------------------------- */
@@ -327,11 +379,24 @@ $(function () {
 
             //FUNÇÃO QUE GERA DEFINIÕES PARA SMARTPHONE OU IPAD
             function smartphoneIPAD() {
+                btnTerminarSessao();
                 zoom = 13;
                 callMap();
                 mapa();
                 $('#map').css("visibility", "hidden");
                 lista();
+            }
+            //BOTÃO PARA TERMINAR SESSÃO 
+            function btnTerminarSessao() {
+                var content = "<li><button id='btn_terminar_sessao' class='btn btn-link center-block'>Terminar sessão</button></li>";
+                $("ul").append(content);
+                $("#btn_terminar_sessao").css({
+                    "outline": "none",
+                    "text-decoration": "none"
+                });
+                $("#btn_terminar_sessao").click(function () {
+                    terminarSessao();
+                });
             }
             //CSS - CENTRA CONTEÚDO PARA SMARTPHONE OU IPAD
             function cssDefs() {
@@ -353,7 +418,7 @@ $(function () {
                 //ABRE A DIV DOS FILTROS
                 $("#btn_filtros").click(function () {
                     filtros();
-                    addSelectTiposComida();
+                    addSelectTiposComida('.selectpicker');
                 });
                 //ABRE A DIV DO MAPA
                 $("#btn_mapa").click(function () {
@@ -432,7 +497,7 @@ $(function () {
                 $("#btn_filtros").click(function () {
                     $('#map').css("visibility", "hidden");
                     filtros();
-                    addSelectTiposComida();
+                    addSelectTiposComida('.selectpicker');
                 });
                 //ABRE A DIV DA LISTA
                 $("#btn_lista").click(function () {
@@ -452,6 +517,14 @@ $(function () {
                 callMap();
                 //CONTEÚDO HTML
                 $("#container").empty();
+                $("#container").before("<button id='btn_terminar_sessao' class='btn btn-xs btn-link center-block'>Terminar sessão</button></br>");
+                $("#btn_terminar_sessao").css({
+                    "outline": "none",
+                    "color": "black"
+                });
+                $("#btn_terminar_sessao").click(function () {
+                    terminarSessao();
+                });
                 var content = "<div class='content'><div class='row'><div id='div_filtros' class='col-lg-4'><center></br></br><div id='content' style='width:85%; height:275px; background-color: #f9f9f9; border-width: 1%; border-radius: 2%;  border-style: solid; border-color: #f2f1f1;'><form class='form-inline'><div class='form-group'></br><label id='lblComida'>Tipo de Comida:</label> </br><select class='selectpicker' title='Selecione o tipo de comida'> </select></div></form></br><form class='form-inline'><div class='form-group'><input id='checkRestaurantesAbertos' type='checkbox'> <label id='lblRestauranteAberto'>Restaurantes Abertos</label></div></form></br><form class='form-inline'><div class='form-group'><label id='lblDistancia'>Distância Máxima:</label></br><input id='inputDistancia' type='text' data-slider-min='1' data-slider-max='20' data-slider-step='1' data-slider-value='20'/></div></form></br><button id='btn_aplicar' type='button' class='btn btn-info btn-md'>Aplicar</button></br></div></div></center><div id='div_lista'class='col-lg-4'><center><div id='content'><form class='form-inline'><div class='form-group'><label id='lblOrdenar'>Ordenar por:</label> <select class='form-control input-sm' id='selectOrdenar'><option>Nome (ordem alfabética)</option><option>Distância (perto para longe)</option><option>Pontuação (alta para baixa)</option></select></div></form></div></center></br></div><div class='col-lg-4'><center></br></br><div id='map'></div></center></div></div></div>";
                 $('#container').append(content);
                 //SLIDER DISTÂNCIA
@@ -667,13 +740,13 @@ $(function () {
                         }
                     }
                 }
+
                 function createMarker(place) {
-                    console.log("entrei")
                     var placeLoc = place.geometry.location;
                     var marker = new google.maps.Marker({
                         map: map,
                         position: place.geometry.location,
-                        icon: "entrei"+'images/favicon2.ico' //ICON DO GARFO NO MAPA
+                        icon: 'images/favicon2.ico' //ICON DO GARFO NO MAPA
                     });
                     //INFORMAÇÃO DA INFOWINDOW (NOME DO RESTAURANTE, MORADA E RATING)
                     google.maps.event.addListener(marker, 'click', function () {
